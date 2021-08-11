@@ -103,6 +103,12 @@ namespace KeyenceDataProcessing
         }
 
 
+        internal string read(string key)
+        {
+            return read(key, "");
+        }
+
+
         internal bool read(string key, bool defValue)
         {
             bool result = defValue;
