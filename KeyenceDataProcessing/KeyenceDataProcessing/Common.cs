@@ -18,6 +18,9 @@ namespace KeyenceDataProcessing
         private const string _configFileName = _applicationName + ".config";
         private static string _configPath;
 
+        public const int SimaticRack = 0;
+        public const int SimaticSlot = 2;
+
         private const string _keyenceKeyPrefix = "Keyence";
         private const string _keyenceConnectionTypeKey = _keyenceKeyPrefix + "Connection";
         private const string _keyenceConnectionTypeUsbValue = "usb";
