@@ -93,6 +93,9 @@
     <Compile Include="SimaticCommunication.cs" />
     <Compile Include="Snap7\Sharp7.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <Content Include="Keyence\LJV7_IF.dll" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

@@ -10,7 +10,7 @@ namespace KeyenceDataProcessing
     {
         public bool Opened
         {
-            get { return isOpened(); }
+            get { return IsOpened(); }
         }
         public CommunicationOptions CommunicationOptions { get; set; }
         public CommunicationData CommunicationData
@@ -44,6 +44,7 @@ namespace KeyenceDataProcessing
                 _terminate = false;
                 _thread.Start();
             }
+            Console.Out.WriteLine("Opened: " + Opened);
         }
 
 
@@ -64,13 +65,29 @@ namespace KeyenceDataProcessing
             {
                 Monitor.Enter(_communicationData);
                 data = _communicationData;
-          
+                Write(ref data);
+                Read();
                 Monitor.Exit(_communicationData);
                
 
                 Thread.Sleep(1000);
             }
             Console.Out.WriteLine("Thread stopped");
+        }
+
+
+        private void Read()
+        {
+        }
+
+
+        private void Write(ref CommunicationData data)
+        {
+            int block = _startedCommuncationOptions.Block;
+            WriteInt32(block, _startedCommuncationOptions.ResultYAddress, (Int32)data.ResultY);
+            WriteInt32(block, _startedCommuncationOptions.ResultZAddress, (Int32)data.ResultZ);
+            WriteBool (block, _startedCommuncationOptions.QualityAddress, (bool)data.Quality);
+            WriteInt16(block, _startedCommuncationOptions.CounterAddress, (Int16)data.Counter);
         }
 
 
@@ -84,7 +101,7 @@ namespace KeyenceDataProcessing
             _startedCommuncationOptions = CommunicationOptions;
             try
             {
-                if (checkCommuncationOptions(_startedCommuncationOptions))
+                if (CheckCommuncationOptions(_startedCommuncationOptions))
                 {
                     _s7Client = OpenImpl();
                 }
@@ -114,7 +131,7 @@ namespace KeyenceDataProcessing
 
         private void Close()
         {
-            if (isOpened())
+            if (IsOpened())
             {
                 try
                 {
@@ -128,77 +145,120 @@ namespace KeyenceDataProcessing
         }
 
 
-        public bool isOpened()
+        public bool IsOpened()
         {
             return _s7Client == null ? false : _s7Client.Connected;
         }
 
 
-        private bool checkCommuncationOptions(CommunicationOptions options)
+        private bool CheckCommuncationOptions(CommunicationOptions options)
         {
-            return checkRack(options.Rack)
-                && checkSlot(options.Slot)
+            return CheckRack(options.Rack)
+                && CheckSlot(options.Slot)
                 && options.Ip != null
                 && options.Ip.Length == 0
-                && checkValueAddress(options.ResultYAddress)
-                && checkValueAddress(options.ResultZAddress)
-                && checkValueAddress(options.QualityAddress)
-                && checkValueAddress(options.CounterAddress);
+                && CheckValueAddress(options.ResultYAddress)
+                && CheckValueAddress(options.ResultZAddress)
+                && CheckValueAddress(options.QualityAddress)
+                && CheckValueAddress(options.CounterAddress);
         }
 
 
-        private bool checkRack(int rack)
+        private bool CheckRack(int rack)
         {
             return rack >= 0;
         }
 
 
-        private bool checkSlot(int slot)
+        private bool CheckSlot(int slot)
         {
             return slot >= 0;
         }
 
 
-        private bool checkValueAddress(int address)
+        private bool CheckValueAddress(int address)
         {
             return address >= 0;
         }
 
 
-        private bool checkBlockNumber(int blockNumber)
+        private bool CheckBlockNumber(int blockNumber)
         {
             return blockNumber > 10;
         }
 
 
-        private Int32 readInt32(int blockNumber, int address)
+        private byte[] ReadValue(int blockNumber, int address, int size)
         {
-            return 0;
+            byte[] buff = new byte[size];
+            _s7Client.DBRead(blockNumber, address, size, buff);
+            return buff;
         }
 
 
-        private float readFloat(int blockNumber, int address)
+        private bool ReadBool(int blockNumber, int address)
+        {
+            byte[] buff = ReadValue(blockNumber, address, 1);
+            return buff[0] != 0;
+        }
+
+
+        private Int16 ReadInt16(int blockNumber, int address)
+        {
+            byte[] buff = ReadValue(blockNumber, address, 2);
+            return (Int16)S7.GetIntAt(buff, 0);
+        }
+
+
+        private Int32 ReadInt32(int blockNumber, int address)
+        {
+            byte[] buff = ReadValue(blockNumber, address, 4);
+            return S7.GetDIntAt(buff, 0);
+        }
+
+
+        private float ReadReal(int blockNumber, int address)
+        {
+            byte[] buff = ReadValue(blockNumber, address, 4);
+            return S7.GetRealAt(buff, 0);
+        }
+
+
+        private void WriteValue(int blockNumber, int address, byte[] buff)
+        {
+            _s7Client.DBWrite(blockNumber, address, buff.Length, buff);
+        }
+
+
+        private void WriteBool(int blockNumber, int address, bool value)
+        {
+            byte[] buff = new byte[1];
+            S7.SetByteAt(buff, 0, (byte)(value ? 0 : 0xFF));
+            WriteValue(blockNumber, address, buff);
+        }
+
+
+        private void WriteInt16(int blockNumber, int address, Int16 value)
+        {
+            byte[] buff = new byte[2];
+            S7.SetIntAt(buff, 0, value);
+            WriteValue(blockNumber, address, buff);
+        }
+
+
+        private void WriteInt32(int blockNumber, int address, Int32 value)
         {
             byte[] buff = new byte[4];
-            _s7Client.DBRead(blockNumber, address, buff.Length, buff);
-            Array.Reverse(buff);
-            return BitConverter.ToSingle(buff, 0);
+            S7.SetDIntAt(buff, 0, value);
+            WriteValue(blockNumber, address, buff);
         }
 
 
-        private void writeInt32(int blockNumber, int address, Int32 value)
+        private void WriteReal(int blockNumber, int address, float value)
         {
-            byte[] buff = BitConverter.GetBytes(value);
-            Array.Reverse(buff);
-            _s7Client.DBWrite(blockNumber, address, 4, buff);
-        }
-
-
-        private void writeFloat(int blockNumber, int address, float value)
-        {
-            byte[] buff = BitConverter.GetBytes(value);
-            Array.Reverse(buff);
-            _s7Client.DBWrite(blockNumber, address, 4, buff);
+            byte[] buff = new byte[4];
+            S7.SetRealAt(buff, 0, value);
+            WriteValue(blockNumber, address, buff);
         }
     }
 
@@ -221,5 +281,10 @@ namespace KeyenceDataProcessing
         internal double ResultZ;
         internal bool Quality;
         internal int Counter;
+    }
+
+
+    internal class CommunicationException : Exception
+    {
     }
 }
