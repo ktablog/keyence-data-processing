@@ -34,7 +34,7 @@ namespace KeyenceDataProcessing
                     {
                         string key = scanLine.Substring(0, index).Trim();
                         string value = scanLine.Substring(index + 1).Trim();
-                        write(key, value);
+                        Write(key, value);
                     }
                 }
             }
@@ -65,31 +65,31 @@ namespace KeyenceDataProcessing
         }
 
 
-        internal void write(string key, string value)
+        internal void Write(string key, string value)
         {
             _dictionary[key] = value;
         }
 
 
-        internal void write(string key, bool value)
+        internal void Write(string key, bool value)
         {
-            write(key, value.ToString(CultureInfo.InvariantCulture));
+            Write(key, value.ToString(CultureInfo.InvariantCulture));
         }
 
 
-        internal void write(string key, int value)
+        internal void Write(string key, int value)
         {
-            write(key, value.ToString(CultureInfo.InvariantCulture));
+            Write(key, value.ToString(CultureInfo.InvariantCulture));
         }
 
 
-        internal void write(string key, double value)
+        internal void Write(string key, double value)
         {
-            write(key, value.ToString(CultureInfo.InvariantCulture));
+            Write(key, value.ToString(CultureInfo.InvariantCulture));
         }
 
 
-        internal string read(string key, string defValue)
+        internal string Read(string key, string defValue)
         {
             string result = defValue;
             try
@@ -103,18 +103,18 @@ namespace KeyenceDataProcessing
         }
 
 
-        internal string read(string key)
+        internal string Read(string key)
         {
-            return read(key, "");
+            return Read(key, "");
         }
 
 
-        internal bool read(string key, bool defValue)
+        internal bool Read(string key, bool defValue)
         {
             bool result = defValue;
             try
             {
-                result = Boolean.Parse(read(key, ""));
+                result = Boolean.Parse(Read(key, ""));
             }
             catch
             {
@@ -123,12 +123,12 @@ namespace KeyenceDataProcessing
         }
 
 
-        internal int read(string key, int defValue)
+        internal int Read(string key, int defValue)
         {
             int result = defValue;
             try
             {
-                result = Int32.Parse(read(key, ""), CultureInfo.InvariantCulture);
+                result = Int32.Parse(Read(key, ""), CultureInfo.InvariantCulture);
             }
             catch
             {
@@ -137,12 +137,12 @@ namespace KeyenceDataProcessing
         }
 
 
-        internal double read(string key, double defValue)
+        internal double Read(string key, double defValue)
         {
             double result = defValue;
             try
             {
-                result = Double.Parse(read(key, ""), CultureInfo.InvariantCulture);
+                result = Double.Parse(Read(key, ""), CultureInfo.InvariantCulture);
             }
             catch
             {

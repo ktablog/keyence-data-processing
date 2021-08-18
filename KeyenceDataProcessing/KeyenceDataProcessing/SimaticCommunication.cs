@@ -21,9 +21,15 @@ namespace KeyenceDataProcessing
             }
             set
             {
-                Monitor.Enter(_communicationData);
-                _communicationData = value;
-                Monitor.Exit(_communicationData);
+                Monitor.Enter(_lockObject);
+                try
+                {
+                    _communicationData = value;
+                }
+                finally
+                {
+                    Monitor.Exit(_lockObject);
+                }
             } 
         }
 
@@ -32,6 +38,7 @@ namespace KeyenceDataProcessing
         private S7Client _s7Client = null;
         private CommunicationOptions _startedCommuncationOptions;
         private CommunicationData _communicationData;
+        private readonly object _lockObject = new Object();
  
         public void Start()
         {
@@ -63,12 +70,17 @@ namespace KeyenceDataProcessing
             CommunicationData data;
             while (!_terminate)
             {
-                Monitor.Enter(_communicationData);
-                data = _communicationData;
-                Write(ref data);
-                Read();
-                Monitor.Exit(_communicationData);
-               
+                Monitor.Enter(_lockObject);
+                try
+                {
+                    data = _communicationData;
+                    Write(ref data);
+                    Read();
+                }
+                finally
+                {
+                    Monitor.Exit(_lockObject);
+                }
 
                 Thread.Sleep(1000);
             }
@@ -78,16 +90,29 @@ namespace KeyenceDataProcessing
 
         private void Read()
         {
+            int block = _startedCommuncationOptions.Block;
+            float y = ReadReal(block, _startedCommuncationOptions.ResultYAddress);
+            Console.Out.WriteLine("y=" + y);
+            float z = ReadReal(block, _startedCommuncationOptions.ResultZAddress);
+            Console.Out.WriteLine("z=" + z);
+            bool q = ReadBool(block, _startedCommuncationOptions.QualityAddress);
+            Console.Out.WriteLine("q=" + q);
+            int counter = ReadInt16(block, _startedCommuncationOptions.CounterAddress);
+            Console.Out.WriteLine("counter=" + counter);
         }
 
 
         private void Write(ref CommunicationData data)
         {
+            bool q = true;// data.Quality;
+            float y = 1;
+            float z = 2;
+            Int16 count = 3;
             int block = _startedCommuncationOptions.Block;
-            WriteInt32(block, _startedCommuncationOptions.ResultYAddress, (Int32)data.ResultY);
-            WriteInt32(block, _startedCommuncationOptions.ResultZAddress, (Int32)data.ResultZ);
-            WriteBool (block, _startedCommuncationOptions.QualityAddress, (bool)data.Quality);
-            WriteInt16(block, _startedCommuncationOptions.CounterAddress, (Int16)data.Counter);
+            WriteReal(block, _startedCommuncationOptions.ResultYAddress, y);//(float)data.ResultY);
+            WriteReal(block, _startedCommuncationOptions.ResultZAddress, z);//(float)data.ResultZ);
+            WriteBool (block, _startedCommuncationOptions.QualityAddress, q);//(bool)data.Quality);
+            WriteInt16(block, _startedCommuncationOptions.CounterAddress, count);//(Int16)data.Counter);
         }
 
 
@@ -153,10 +178,10 @@ namespace KeyenceDataProcessing
 
         private bool CheckCommuncationOptions(CommunicationOptions options)
         {
-            return CheckRack(options.Rack)
+             return CheckRack(options.Rack)
                 && CheckSlot(options.Slot)
                 && options.Ip != null
-                && options.Ip.Length == 0
+                && options.Ip.Length != 0
                 && CheckValueAddress(options.ResultYAddress)
                 && CheckValueAddress(options.ResultZAddress)
                 && CheckValueAddress(options.QualityAddress)
@@ -233,7 +258,7 @@ namespace KeyenceDataProcessing
         private void WriteBool(int blockNumber, int address, bool value)
         {
             byte[] buff = new byte[1];
-            S7.SetByteAt(buff, 0, (byte)(value ? 0 : 0xFF));
+            S7.SetByteAt(buff, 0, (byte)(value ? 1 : 0));
             WriteValue(blockNumber, address, buff);
         }
 
@@ -272,6 +297,18 @@ namespace KeyenceDataProcessing
         internal int ResultZAddress;
         internal int QualityAddress;
         internal int CounterAddress;
+
+        internal void Init()
+        {
+            Ip = "";
+            Rack = -1;
+            Slot = -1;
+            Block = -1;
+            ResultYAddress = -1;
+            ResultZAddress = -1;
+            QualityAddress = -1;
+            CounterAddress = -1;
+        }
     }
 
 
@@ -281,6 +318,14 @@ namespace KeyenceDataProcessing
         internal double ResultZ;
         internal bool Quality;
         internal int Counter;
+
+        void Init()
+        {
+            ResultY = 0;
+            ResultZ = 0;
+            Quality = false;
+            Counter = 0;
+        }
     }
 
 

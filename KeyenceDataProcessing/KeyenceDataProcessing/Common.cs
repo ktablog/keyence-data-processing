@@ -63,14 +63,14 @@ namespace KeyenceDataProcessing
         }
 
 
-        internal static void load()
+        internal static void Load()
         {
             CfgFile cfg = new CfgFile();
 
             cfg.Load(configPath + Path.DirectorySeparatorChar + _configFileName);
 
             {
-                string txt = cfg.read(_keyenceConnectionTypeKey).Trim().ToLower();
+                string txt = cfg.Read(_keyenceConnectionTypeKey).Trim().ToLower();
                 switch (txt)
                 {
                     case _keyenceConnectionTypeUsbValue:
@@ -81,19 +81,19 @@ namespace KeyenceDataProcessing
                         break;
                 }
             }
-            KeyenceIp = cfg.read(_keyenceIpKey).Trim();
-            KeyencePort = cfg.read(_keyencePortKey).Trim();
+            KeyenceIp = cfg.Read(_keyenceIpKey).Trim();
+            KeyencePort = cfg.Read(_keyencePortKey).Trim();
 
-            SimaticIp = cfg.read(_simaticIpKey).Trim();
-            SimaticBlock = cfg.read(_simaticBlockKey).Trim();
-            SimaticResultYAddress = cfg.read(_simaticResultYAddressKey).Trim();
-            SimaticResultZAddress = cfg.read(_simaticResultZAddressKey).Trim();
-            SimaticQualityAddress = cfg.read(_simaticQualityAddressKey).Trim();
-            SimaticCounterAddress = cfg.read(_simaticCounterAddressKey).Trim();
+            SimaticIp = cfg.Read(_simaticIpKey).Trim();
+            SimaticBlock = cfg.Read(_simaticBlockKey).Trim();
+            SimaticResultYAddress = cfg.Read(_simaticResultYAddressKey).Trim();
+            SimaticResultZAddress = cfg.Read(_simaticResultZAddressKey).Trim();
+            SimaticQualityAddress = cfg.Read(_simaticQualityAddressKey).Trim();
+            SimaticCounterAddress = cfg.Read(_simaticCounterAddressKey).Trim();
         }
 
 
-        internal static void save()
+        internal static void Save()
         {
             try
             {
@@ -115,17 +115,17 @@ namespace KeyenceDataProcessing
                             connectionType = _keyenceConnectionTypeEthernetValue;
                             break;
                     }
-                    cfg.write(_keyenceConnectionTypeKey, connectionType);
+                    cfg.Write(_keyenceConnectionTypeKey, connectionType);
                 }
-                cfg.write(_keyenceIpKey, KeyenceIp);
-                cfg.write(_keyencePortKey, KeyencePort);
+                cfg.Write(_keyenceIpKey, KeyenceIp);
+                cfg.Write(_keyencePortKey, KeyencePort);
 
-                cfg.write(_simaticIpKey, SimaticIp);
-                cfg.write(_simaticBlockKey, SimaticBlock);
-                cfg.write(_simaticResultYAddressKey, SimaticResultYAddress);
-                cfg.write(_simaticResultZAddressKey, SimaticResultZAddress);
-                cfg.write(_simaticQualityAddressKey, SimaticQualityAddress);
-                cfg.write(_simaticCounterAddressKey, SimaticCounterAddress);
+                cfg.Write(_simaticIpKey, SimaticIp);
+                cfg.Write(_simaticBlockKey, SimaticBlock);
+                cfg.Write(_simaticResultYAddressKey, SimaticResultYAddress);
+                cfg.Write(_simaticResultZAddressKey, SimaticResultZAddress);
+                cfg.Write(_simaticQualityAddressKey, SimaticQualityAddress);
+                cfg.Write(_simaticCounterAddressKey, SimaticCounterAddress);
 
                 cfg.Save(_configPath + Path.DirectorySeparatorChar + _configFileName);
             }

@@ -14,7 +14,7 @@ namespace KeyenceDataProcessing
         public MainForm()
         {
             InitializeComponent();
-            Common.load();
+            Common.Load();
         }
 
         private void optionsButton_Click(object sender, EventArgs e)

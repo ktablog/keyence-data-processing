@@ -72,7 +72,7 @@ namespace KeyenceDataProcessing
             Common.SimaticQualityAddress = ReadTextBox(simaticQualityAddressTextBox);
             Common.SimaticCounterAddress = ReadTextBox(simaticCounterAddressTextBox);
 
-            Common.save();
+            Common.Save();
         }
 
 
