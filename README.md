@@ -5,3 +5,4 @@
 - .Net 3.5
 - MSChart
 - LJV_IF lib
+- Snap7 (Sharp7)
