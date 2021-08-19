@@ -90,6 +90,7 @@
       <DependentUpon>Settings.settings</DependentUpon>
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
     </Compile>
+    <Compile Include="SignalProcessor.cs" />
     <Compile Include="SimaticCommunication.cs" />
     <Compile Include="Snap7\Sharp7.cs" />
   </ItemGroup>

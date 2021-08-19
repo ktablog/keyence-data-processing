@@ -39,6 +39,7 @@ namespace KeyenceDataProcessing
         private CommunicationOptions _startedCommuncationOptions;
         private CommunicationData _communicationData;
         private readonly object _lockObject = new Object();
+        private UInt16 _sendCounter = 0;
  
         public void Start()
         {
@@ -74,8 +75,10 @@ namespace KeyenceDataProcessing
                 try
                 {
                     data = _communicationData;
+                    data.Counter = _sendCounter;
                     Write(ref data);
                     Read();
+                    _sendCounter++;
                 }
                 finally
                 {
@@ -107,12 +110,11 @@ namespace KeyenceDataProcessing
             bool q = true;// data.Quality;
             float y = 1;
             float z = 2;
-            Int16 count = 3;
             int block = _startedCommuncationOptions.Block;
             WriteReal(block, _startedCommuncationOptions.ResultYAddress, y);//(float)data.ResultY);
             WriteReal(block, _startedCommuncationOptions.ResultZAddress, z);//(float)data.ResultZ);
             WriteBool (block, _startedCommuncationOptions.QualityAddress, q);//(bool)data.Quality);
-            WriteInt16(block, _startedCommuncationOptions.CounterAddress, count);//(Int16)data.Counter);
+            WriteInt16(block, _startedCommuncationOptions.CounterAddress, (Int16)data.Counter);
         }
 
 
