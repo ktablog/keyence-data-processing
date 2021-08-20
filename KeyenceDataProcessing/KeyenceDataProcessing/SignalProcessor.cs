@@ -7,6 +7,7 @@ namespace KeyenceDataProcessing
 {
     public class SignalProcessor
     {
+        #region Field
         private const int _nOfDots = 800;
         private const int _nOfZHistoColumns = 7;
         private const int _searchSignalCount = 3;
@@ -19,25 +20,34 @@ namespace KeyenceDataProcessing
         private bool _searchError = true;
         private double _yValue;
         private double _zValue;
+        #endregion
 
         #region Property
+
         public int NofDots
         {
             get { return _nOfDots; }
         }
 
-        private int SearchSignalsCount
+        public int SearchSignalsCount
         {
             get { return _searchSignalsList.Count; }
         }
+
+        public List<double[]> SearchSignalsList
+        {
+            get { return _searchSignalsList; }
+        }
+
         #endregion
 
         #region Delegate
         delegate bool ChooseValue(double v1, double v2);
         #endregion
 
+        #region Method
 
-        internal SignalProcessor()
+        public SignalProcessor()
         {
             BuildSearchSignal();
         }
@@ -272,7 +282,7 @@ namespace KeyenceDataProcessing
         }
 
 
-        internal SignalProcessorDataOut Calc(SignalProcessorDataIn dataIn)
+        public SignalProcessorDataOut Calc(SignalProcessorDataIn dataIn)
         {
             _validSignalRange = FindValidSignal(dataIn._entrySignal, -20);
             _validSignal = ExtractValidSignal(dataIn._entrySignal, _validSignalRange);
@@ -663,21 +673,23 @@ namespace KeyenceDataProcessing
 
             return slice;
         }
+
+        #endregion
     }
 
 
-    internal class SignalProcessorDataIn
+    public class SignalProcessorDataIn
     {
-        internal double[] _entrySignal = null;
+        public double[] _entrySignal = null;
     }
 
 
-    internal class SignalProcessorDataOut
+    public class SignalProcessorDataOut
     {
-        internal double[] _searchSignal = null;
-        internal bool _searchError = true;
-        internal double _yValue = 0.0;
-        internal double _zValue = 0.0;
-        internal int _searchSignalOffset = 0;
+        public double[] _searchSignal = null;
+        public bool _searchError = true;
+        public double _yValue = 0.0;
+        public double _zValue = 0.0;
+        public int _searchSignalOffset = 0;
     }
 }

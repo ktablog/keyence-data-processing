@@ -5,13 +5,6 @@ using System.IO;
 
 namespace KeyenceDataProcessing
 {
-    enum KeyenceConnectionType
-    {
-        Usb,
-        Ethernet
-    }
-
-
     static class Common
     {
         private const string _applicationName = "KeyenceDataProcessing";
@@ -45,7 +38,7 @@ namespace KeyenceDataProcessing
         public static string SimaticQualityAddress { get; set; }
         public static string SimaticCounterAddress { get; set; }
 
-        internal static string configPath
+        public static string configPath
         {
             get
             {
@@ -63,7 +56,7 @@ namespace KeyenceDataProcessing
         }
 
 
-        internal static void Load()
+        public static void Load()
         {
             CfgFile cfg = new CfgFile();
 
@@ -93,7 +86,7 @@ namespace KeyenceDataProcessing
         }
 
 
-        internal static void Save()
+        public static void Save()
         {
             try
             {

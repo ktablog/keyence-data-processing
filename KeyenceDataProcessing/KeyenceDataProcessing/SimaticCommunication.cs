@@ -8,12 +8,13 @@ namespace KeyenceDataProcessing
 {
     class SimaticCommunication
     {
+        #region Property
         public bool Opened
         {
             get { return IsOpened(); }
         }
         public CommunicationOptions CommunicationOptions { get; set; }
-        public CommunicationData CommunicationData
+        public SimaticCommunicationData CommunicationData
         { 
             get 
             {
@@ -30,17 +31,24 @@ namespace KeyenceDataProcessing
                 {
                     Monitor.Exit(_lockObject);
                 }
-            } 
+            }
         }
+        #endregion
+
+
+        #region Field
 
         private Thread _thread = null;
         private volatile bool _terminate = true;
         private S7Client _s7Client = null;
         private CommunicationOptions _startedCommuncationOptions;
-        private CommunicationData _communicationData;
+        private SimaticCommunicationData _communicationData;
         private readonly object _lockObject = new Object();
         private UInt16 _sendCounter = 0;
- 
+
+        #endregion
+
+
         public void Start()
         {
             Stop();
@@ -68,7 +76,7 @@ namespace KeyenceDataProcessing
         public void Run()
         {
             Console.Out.WriteLine("Thread started");
-            CommunicationData data;
+            SimaticCommunicationData data;
             while (!_terminate)
             {
                 Monitor.Enter(_lockObject);
@@ -79,6 +87,9 @@ namespace KeyenceDataProcessing
                     Write(ref data);
                     Read();
                     _sendCounter++;
+                }
+                catch
+                {
                 }
                 finally
                 {
@@ -105,7 +116,7 @@ namespace KeyenceDataProcessing
         }
 
 
-        private void Write(ref CommunicationData data)
+        private void Write(ref SimaticCommunicationData data)
         {
             bool q = true;// data.Quality;
             float y = 1;
@@ -289,18 +300,18 @@ namespace KeyenceDataProcessing
         }
     }
 
-    internal struct CommunicationOptions
+    public struct CommunicationOptions
     {
-        internal string Ip;
-        internal int Rack;
-        internal int Slot;
-        internal int Block;
-        internal int ResultYAddress;
-        internal int ResultZAddress;
-        internal int QualityAddress;
-        internal int CounterAddress;
+        public string Ip;
+        public int Rack;
+        public int Slot;
+        public int Block;
+        public int ResultYAddress;
+        public int ResultZAddress;
+        public int QualityAddress;
+        public int CounterAddress;
 
-        internal void Init()
+        public void Init()
         {
             Ip = "";
             Rack = -1;
@@ -314,12 +325,12 @@ namespace KeyenceDataProcessing
     }
 
 
-    internal struct CommunicationData
+    public struct SimaticCommunicationData
     {
-        internal double ResultY;
-        internal double ResultZ;
-        internal bool Quality;
-        internal int Counter;
+        public double ResultY;
+        public double ResultZ;
+        public bool Quality;
+        public int Counter;
 
         void Init()
         {
@@ -331,7 +342,7 @@ namespace KeyenceDataProcessing
     }
 
 
-    internal class CommunicationException : Exception
+    public class SimaticCommunicationException : Exception
     {
     }
 }

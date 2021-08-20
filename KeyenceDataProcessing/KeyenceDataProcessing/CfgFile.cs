@@ -8,7 +8,11 @@ namespace KeyenceDataProcessing
 {
     class CfgFile
     {
+        #region Field
         private Dictionary<string, string> _dictionary = new Dictionary<string,string>();
+        #endregion
+
+        #region Method
 
         void Clear()
         {
@@ -16,7 +20,7 @@ namespace KeyenceDataProcessing
         }
        
 
-        internal void Load(string fileName)
+        public void Load(string fileName)
         {
             try
             {
@@ -44,7 +48,7 @@ namespace KeyenceDataProcessing
         }
 
 
-        internal void Save(string fileName)
+        public void Save(string fileName)
         {
             StringBuilder stringBuilder = new StringBuilder();
 
@@ -65,31 +69,31 @@ namespace KeyenceDataProcessing
         }
 
 
-        internal void Write(string key, string value)
+        public void Write(string key, string value)
         {
             _dictionary[key] = value;
         }
 
 
-        internal void Write(string key, bool value)
+        public void Write(string key, bool value)
         {
             Write(key, value.ToString(CultureInfo.InvariantCulture));
         }
 
 
-        internal void Write(string key, int value)
+        public void Write(string key, int value)
         {
             Write(key, value.ToString(CultureInfo.InvariantCulture));
         }
 
 
-        internal void Write(string key, double value)
+        public void Write(string key, double value)
         {
             Write(key, value.ToString(CultureInfo.InvariantCulture));
         }
 
 
-        internal string Read(string key, string defValue)
+        public string Read(string key, string defValue)
         {
             string result = defValue;
             try
@@ -103,13 +107,13 @@ namespace KeyenceDataProcessing
         }
 
 
-        internal string Read(string key)
+        public string Read(string key)
         {
             return Read(key, "");
         }
 
 
-        internal bool Read(string key, bool defValue)
+        public bool Read(string key, bool defValue)
         {
             bool result = defValue;
             try
@@ -123,7 +127,7 @@ namespace KeyenceDataProcessing
         }
 
 
-        internal int Read(string key, int defValue)
+        public int Read(string key, int defValue)
         {
             int result = defValue;
             try
@@ -137,7 +141,7 @@ namespace KeyenceDataProcessing
         }
 
 
-        internal double Read(string key, double defValue)
+        public double Read(string key, double defValue)
         {
             double result = defValue;
             try
@@ -149,6 +153,7 @@ namespace KeyenceDataProcessing
             }
             return result;
         }
+        #endregion
     }
 }
 
