@@ -5,6 +5,13 @@ namespace KeyenceDataProcessing
     {
         void KeyenceStart();
         void KeyenceStop();
-        double[] KeyenceReadProfile();
+        KeyenceReaderData KeyenceReadProfile();
+    }
+
+    public class KeyenceReaderData
+    {
+        public double[] ProfileData = null;
+        public double YStart = 0;
+        public  double YPitch = 0;
     }
 }

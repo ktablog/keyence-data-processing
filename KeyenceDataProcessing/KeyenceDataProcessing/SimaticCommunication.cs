@@ -118,13 +118,10 @@ namespace KeyenceDataProcessing
 
         private void Write(ref SimaticCommunicationData data)
         {
-            bool q = true;// data.Quality;
-            float y = 1;
-            float z = 2;
             int block = _startedCommuncationOptions.Block;
-            WriteReal(block, _startedCommuncationOptions.ResultYAddress, y);//(float)data.ResultY);
-            WriteReal(block, _startedCommuncationOptions.ResultZAddress, z);//(float)data.ResultZ);
-            WriteBool (block, _startedCommuncationOptions.QualityAddress, q);//(bool)data.Quality);
+            WriteReal(block, _startedCommuncationOptions.ResultYAddress, (float)data.ResultY);
+            WriteReal(block, _startedCommuncationOptions.ResultZAddress, (float)data.ResultZ);
+            WriteBool (block, _startedCommuncationOptions.QualityAddress, (bool)data.Quality);
             WriteInt16(block, _startedCommuncationOptions.CounterAddress, (Int16)data.Counter);
         }
 

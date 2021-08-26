@@ -8,7 +8,6 @@ using System.Windows.Forms;
 using System.Windows.Forms.DataVisualization.Charting;
 using System.Diagnostics;
 
-
 namespace KeyenceDataProcessing
 {
     public partial class TrendForm : Form
@@ -22,6 +21,8 @@ namespace KeyenceDataProcessing
         Point? _lastEntryPoint = null;
         private double _yValue;
         private double _zValue;
+        private double _yValueStart = 0;
+        private double _yValuePitch = 0;
         private DateTime _calculateTime;
         private IKeyenceReader _keyenceReader;
         private Queue<KeyenceData> _keyenceData = new Queue<KeyenceData>(1024);
@@ -43,6 +44,21 @@ namespace KeyenceDataProcessing
             get { return _keyenceReader; }
             set { _keyenceReader = value; }
         }
+        public double YValueInMm
+        {
+            get 
+            {
+                return _yValueStart + _yValue * _yValuePitch;
+            }
+        }
+        public double ZValueInMm
+        {
+            get
+            {
+                return _zValue;
+            }
+        }
+
         #endregion
 
         #region Method
@@ -131,13 +147,16 @@ namespace KeyenceDataProcessing
         {
             if (_searchError)
             {
-                yValueLbl.Text = "?";
-                zValueLbl.Text = "?";
+                string errorTxt = "?";
+                yValueInMmLbl.Text = errorTxt;
+                zValueInMmLbl.Text = errorTxt;
             }
             else
             {
-                yValueLbl.Text = _yValue.ToString("0.000");
-                zValueLbl.Text = _zValue.ToString("0.000");
+                string format = "0.000";
+                yValueLbl.Text = _yValue.ToString(format);
+                yValueInMmLbl.Text = YValueInMm.ToString(format);
+                zValueInMmLbl.Text = ZValueInMm.ToString(format);
             }
         }
 
@@ -234,8 +253,8 @@ namespace KeyenceDataProcessing
             _zValue = dataOut._zValue;
             SimaticCommunicationData simaticCommunicationData = new SimaticCommunicationData();
             simaticCommunicationData.Quality = !_searchError;
-            simaticCommunicationData.ResultY = _yValue;
-            simaticCommunicationData.ResultZ = _zValue;
+            simaticCommunicationData.ResultY = YValueInMm;
+            simaticCommunicationData.ResultZ = ZValueInMm;
             if (isSimaticCommuncationEnabled())
             {
                 _simaticCommunication.CommunicationData = simaticCommunicationData;
@@ -306,7 +325,14 @@ namespace KeyenceDataProcessing
 
         private void keyenceTimer_Tick(object sender, EventArgs e)
         {
-            double[] data = _keyenceReader.KeyenceReadProfile();
+            KeyenceReaderData readerData = _keyenceReader.KeyenceReadProfile();
+            double[] data = null;
+            if (readerData != null)
+            {
+                data = readerData.ProfileData;
+                _yValueStart = readerData.YStart * 0.00001;
+                _yValuePitch = readerData.YPitch * 0.00001;
+            }
             
             if (data != null)
             {
