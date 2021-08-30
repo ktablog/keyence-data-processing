@@ -8,6 +8,7 @@ using System.Windows.Forms;
 using System.Windows.Forms.DataVisualization.Charting;
 using System.Diagnostics;
 
+
 namespace KeyenceDataProcessing
 {
     public partial class TrendForm : Form
@@ -423,11 +424,11 @@ namespace KeyenceDataProcessing
         }
 
 
-        private Nullable<CommunicationOptions> ConvertCommunicationOptions()
+        private Nullable<SimaticCommunicationOptions> ConvertCommunicationOptions()
         {
             try
             {
-                CommunicationOptions options = new CommunicationOptions();
+                SimaticCommunicationOptions options = new SimaticCommunicationOptions();
                 options.Init();
 
                 options.Ip = Common.SimaticIp;
@@ -469,7 +470,7 @@ namespace KeyenceDataProcessing
 
         private void RestartSimaticCommunication()
         {
-            Nullable<CommunicationOptions> communicationOptions = ConvertCommunicationOptions();
+            Nullable<SimaticCommunicationOptions> communicationOptions = ConvertCommunicationOptions();
             if (communicationOptions != null)
             {
                 _simaticCommunication.CommunicationOptions = communicationOptions.Value;

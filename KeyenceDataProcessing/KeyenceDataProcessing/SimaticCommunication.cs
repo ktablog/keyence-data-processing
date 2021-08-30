@@ -13,7 +13,7 @@ namespace KeyenceDataProcessing
         {
             get { return IsOpened(); }
         }
-        public CommunicationOptions CommunicationOptions { get; set; }
+        public SimaticCommunicationOptions CommunicationOptions { get; set; }
         public SimaticCommunicationData CommunicationData
         { 
             get 
@@ -41,7 +41,7 @@ namespace KeyenceDataProcessing
         private Thread _thread = null;
         private volatile bool _terminate = true;
         private S7Client _s7Client = null;
-        private CommunicationOptions _startedCommuncationOptions;
+        private SimaticCommunicationOptions _startedCommuncationOptions;
         private SimaticCommunicationData _communicationData;
         private readonly object _lockObject = new Object();
         private UInt16 _sendCounter = 0;
@@ -60,7 +60,6 @@ namespace KeyenceDataProcessing
                 _terminate = false;
                 _thread.Start();
             }
-            Console.Out.WriteLine("Opened: " + Opened);
         }
 
 
@@ -75,7 +74,7 @@ namespace KeyenceDataProcessing
 
         public void Run()
         {
-            Console.Out.WriteLine("Thread started");
+            Console.Out.WriteLine("Simatic thread started");
             SimaticCommunicationData data;
             while (!_terminate)
             {
@@ -98,7 +97,7 @@ namespace KeyenceDataProcessing
 
                 Thread.Sleep(1000);
             }
-            Console.Out.WriteLine("Thread stopped");
+            Console.Out.WriteLine("Simatic thread stopped");
         }
 
 
@@ -186,7 +185,7 @@ namespace KeyenceDataProcessing
         }
 
 
-        private bool CheckCommuncationOptions(CommunicationOptions options)
+        private bool CheckCommuncationOptions(SimaticCommunicationOptions options)
         {
              return CheckRack(options.Rack)
                 && CheckSlot(options.Slot)
@@ -297,7 +296,7 @@ namespace KeyenceDataProcessing
         }
     }
 
-    public struct CommunicationOptions
+    public struct SimaticCommunicationOptions
     {
         public string Ip;
         public int Rack;
@@ -336,10 +335,5 @@ namespace KeyenceDataProcessing
             Quality = false;
             Counter = 0;
         }
-    }
-
-
-    public class SimaticCommunicationException : Exception
-    {
     }
 }
