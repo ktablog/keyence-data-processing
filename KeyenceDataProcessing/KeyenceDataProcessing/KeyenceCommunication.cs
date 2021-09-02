@@ -21,6 +21,13 @@ namespace KeyenceDataProcessing
         public int DeviceId;
         public KeyenceConnectionType ConnectionType;
         public KeyenceEthernetOpenOptions EthernetOptions;
+
+        public void Init()
+        {
+            DeviceId = 0;
+            ConnectionType = KeyenceConnectionType.Usb;
+            EthernetOptions.Init();
+        }
     }
 
 
@@ -28,6 +35,12 @@ namespace KeyenceDataProcessing
     {
         public string Ip;
         public int Port;
+
+        public void Init()
+        {
+            Ip = "";
+            Port = 0;
+        }
     }
     
 
@@ -65,7 +78,7 @@ namespace KeyenceDataProcessing
         {
             Stop();
 
-            //if (Open())
+            if (Open())
             {
                 ThreadStart threadStart = new ThreadStart(this.Run);
                 _thread = new Thread(threadStart);
@@ -110,7 +123,7 @@ namespace KeyenceDataProcessing
 
         private void Read()
         {
-
+            KeyenceReaderData readerData = KeyenceReadProfile();
         }
 
 

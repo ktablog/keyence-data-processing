@@ -7,7 +7,8 @@ using System.Text;
 using System.Windows.Forms;
 using System.Windows.Forms.DataVisualization.Charting;
 using System.Diagnostics;
-
+using LJV7_DllSampleAll.Datas;
+using LJV7_DllSampleAll;
 
 namespace KeyenceDataProcessing
 {
@@ -28,6 +29,7 @@ namespace KeyenceDataProcessing
         private IKeyenceReader _keyenceReader;
         private Queue<KeyenceData> _keyenceData = new Queue<KeyenceData>(1024);
         private SimaticCommunication _simaticCommunication = new SimaticCommunication();
+        private KeyenceCommunication _keyenceCommunication = new KeyenceCommunication();
         private SignalProcessor _signalProcessor = new SignalProcessor();
         #endregion
 
@@ -299,13 +301,13 @@ namespace KeyenceDataProcessing
 
         private void keyenceCheckBox_CheckedChanged(object sender, EventArgs e)
         {
-            if (keyenceCheckBox.Checked)
+            if (isKeyenceCommunicationEnabled())
             {
-                startKeyence();
+                RestartKeyenceCommunication();
             }
             else
             {
-                stopKeyence();
+                StopKeyenceCommunication();
             }
         }
 
@@ -320,7 +322,7 @@ namespace KeyenceDataProcessing
         private void stopKeyence()
         {
             keyenceTimer.Stop();
-            _keyenceReader.KeyenceStop();
+            //_keyenceReader.KeyenceStop();
         }
 
 
@@ -414,17 +416,22 @@ namespace KeyenceDataProcessing
                 {
                     RestartSimaticCommunication();
                 }
+                if (isKeyenceCommunicationEnabled())
+                {
+                    RestartKeyenceCommunication();
+                }
             }
         }
 
         private void TrendForm_FormClosed(object sender, FormClosedEventArgs e)
         {
-            _simaticCommunication.Stop();
+            StopSimaticCommunication();
+            StopKeyenceCommunication();
             Common.Save();
         }
 
 
-        private Nullable<SimaticCommunicationOptions> ConvertCommunicationOptions()
+        private Nullable<SimaticCommunicationOptions> ConvertToSimaticCommunicationOptions()
         {
             try
             {
@@ -470,7 +477,7 @@ namespace KeyenceDataProcessing
 
         private void RestartSimaticCommunication()
         {
-            Nullable<SimaticCommunicationOptions> communicationOptions = ConvertCommunicationOptions();
+            Nullable<SimaticCommunicationOptions> communicationOptions = ConvertToSimaticCommunicationOptions();
             if (communicationOptions != null)
             {
                 _simaticCommunication.CommunicationOptions = communicationOptions.Value;
@@ -492,6 +499,64 @@ namespace KeyenceDataProcessing
         private bool isSimaticCommuncationEnabled()
         {
             return simaticCommunicationCheckBox.Checked;
+        }
+
+
+        private Nullable<KeyenceCommunicationOptions> ConvertToKeyenceCommunicationOptions()
+        {
+            try
+            {
+                KeyenceCommunicationOptions options = new KeyenceCommunicationOptions();
+                options.Init();
+
+                options.DeviceId = Define.DEVICE_ID;
+                options.ConnectionType = Common.KeyenceConnectionType;
+                switch (options.ConnectionType)
+                {
+                    case KeyenceConnectionType.Ethernet:
+                        options.EthernetOptions.Ip = Common.KeyenceIp;
+                        options.EthernetOptions.Port = StrToInt(Common.KeyenceIp);
+                        break;
+                }
+
+                return options;
+            }
+            catch
+            {
+            }
+
+            return null;
+        }
+
+
+        private void RestartKeyenceCommunication()
+        {
+            startKeyence(); return;
+             
+           /*
+            Nullable<KeyenceCommunicationOptions> communicationOptions = ConvertToKeyenceCommunicationOptions();
+            if (communicationOptions != null)
+             {
+                 _keyenceCommunication.CommunicationOptions = communicationOptions.Value;
+                 _keyenceCommunication.Start();
+             }
+             else
+             {
+                 StopKeyenceCommunication();
+             }*/
+        }
+
+
+        private void StopKeyenceCommunication()
+        {
+            stopKeyence(); return;
+            //_keyenceCommunication.Stop();
+        }
+
+
+        private bool isKeyenceCommunicationEnabled()
+        {
+            return keyenceCommunicationCheckBox.Checked;
         }
    
     }
