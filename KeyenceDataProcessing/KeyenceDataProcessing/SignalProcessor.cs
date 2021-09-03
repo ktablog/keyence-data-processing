@@ -5,6 +5,7 @@ using System.Diagnostics;
 
 namespace KeyenceDataProcessing
 {
+    #region SignalProcessor
     public class SignalProcessor
     {
         #region Field
@@ -676,14 +677,18 @@ namespace KeyenceDataProcessing
 
         #endregion
     }
+    #endregion
 
 
+    #region SignalProcessorDataIn
     public class SignalProcessorDataIn
     {
         public double[] _entrySignal = null;
     }
+    #endregion
 
 
+    #region SignalProcessorDataOut
     public class SignalProcessorDataOut
     {
         public double[] _searchSignal = null;
@@ -692,4 +697,5 @@ namespace KeyenceDataProcessing
         public double _zValue = 0.0;
         public int _searchSignalOffset = 0;
     }
+    #endregion
 }

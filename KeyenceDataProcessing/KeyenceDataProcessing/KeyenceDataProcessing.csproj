@@ -66,11 +66,11 @@
   <ItemGroup>
     <Compile Include="CfgFile.cs" />
     <Compile Include="Common.cs" />
-    <Compile Include="IKeyenceReader.cs" />
     <Compile Include="KeyenceCommunication.cs" />
     <Compile Include="Keyence\Define.cs" />
     <Compile Include="Keyence\NativeMethods.cs" />
     <Compile Include="Keyence\PinnedObject.cs" />
+    <Compile Include="Keyence\Utility.cs" />
     <Compile Include="OptionsForm.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -115,7 +115,6 @@
     <Compile Include="TrendForm.designer.cs">
       <DependentUpon>TrendForm.cs</DependentUpon>
     </Compile>
-    <Compile Include="Utility.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Keyence\LJV7_IF.dll" />

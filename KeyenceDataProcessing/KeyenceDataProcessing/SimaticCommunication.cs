@@ -49,6 +49,7 @@ namespace KeyenceDataProcessing
         #endregion
 
 
+        #region Method
         public void Start()
         {
             Stop();
@@ -74,7 +75,6 @@ namespace KeyenceDataProcessing
 
         public void Run()
         {
-            Console.Out.WriteLine("Simatic thread started");
             SimaticCommunicationData data;
             while (!_terminate)
             {
@@ -97,7 +97,6 @@ namespace KeyenceDataProcessing
 
                 Thread.Sleep(1000);
             }
-            Console.Out.WriteLine("Simatic thread stopped");
         }
 
 
@@ -294,8 +293,11 @@ namespace KeyenceDataProcessing
             S7.SetRealAt(buff, 0, value);
             WriteValue(blockNumber, address, buff);
         }
+        #endregion    
     }
 
+
+    #region SimaticCommunicationOptions
     public struct SimaticCommunicationOptions
     {
         public string Ip;
@@ -319,8 +321,10 @@ namespace KeyenceDataProcessing
             CounterAddress = -1;
         }
     }
+    #endregion
 
 
+    #region SimaticCommunicationData
     public struct SimaticCommunicationData
     {
         public double ResultY;
@@ -336,4 +340,5 @@ namespace KeyenceDataProcessing
             Counter = 0;
         }
     }
+    #endregion
 }

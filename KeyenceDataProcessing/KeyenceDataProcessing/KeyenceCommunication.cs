@@ -9,13 +9,16 @@ using LJV7_DllSampleAll.Datas;
 
 namespace KeyenceDataProcessing
 {
+    #region KeyenceConnectionType
     public enum KeyenceConnectionType
     {
         Usb,
         Ethernet
     }
+    #endregion
 
 
+    #region KeyenceCommunicationOptions
     public struct KeyenceCommunicationOptions
     {
         public int DeviceId;
@@ -29,8 +32,10 @@ namespace KeyenceDataProcessing
             EthernetOptions.Init();
         }
     }
+    #endregion
 
 
+    #region KeyenceEthernetOpenOptions
     public struct KeyenceEthernetOpenOptions
     {
         public string Ip;
@@ -42,8 +47,25 @@ namespace KeyenceDataProcessing
             Port = 0;
         }
     }
-    
+    #endregion
 
+
+    #region KeyenceReaderData
+    public class KeyenceReaderData
+    {
+        public double[] ProfileData = null;
+        public double YStart = 0;
+        public double YPitch = 0;
+    }
+    #endregion
+
+
+    #region Delegate
+    public delegate void KeyenceNotify();
+    #endregion
+
+
+    #region KeyenceCommunication
     class KeyenceCommunication
     {
         #region Property
@@ -56,6 +78,16 @@ namespace KeyenceDataProcessing
         }
 
         public KeyenceCommunicationOptions CommunicationOptions { get; set; }
+        public KeyenceReaderData ReaderData
+        {
+            get
+            {
+                return _readerData;
+            }
+        }
+        public event KeyenceNotify ReadSuccessed;
+        public event KeyenceNotify ReadFailed;
+        
         #endregion
 
 
@@ -64,15 +96,11 @@ namespace KeyenceDataProcessing
         private KeyenceCommunicationOptions _startedCommuncationOptions;
         private Thread _thread = null;
         private volatile bool _terminate = true;
-        private readonly object _lockObject = new Object();
+        private volatile KeyenceReaderData _readerData = null;
         #endregion
 
 
         #region Method
-        public KeyenceCommunication()
-        {
-        }
-
 
         public void Start()
         {
@@ -99,31 +127,26 @@ namespace KeyenceDataProcessing
 
         public void Run()
         {
-            Console.Out.WriteLine("Keyence thread started");
             while (!_terminate)
             {
-                Monitor.Enter(_lockObject);
                 try
                 {
                     Read();
+                    OnReadSuccess();
                 }
                 catch
                 {
-                }
-                finally
-                {
-                    Monitor.Exit(_lockObject);
+                    OnReadError();
                 }
 
                 Thread.Sleep(1000);
             }
-            Console.Out.WriteLine("Keyence thread stopped");
-        }
+         }
 
 
         private void Read()
         {
-            KeyenceReaderData readerData = KeyenceReadProfile();
+            _readerData = KeyenceReadProfile();
         }
 
 
@@ -219,7 +242,24 @@ namespace KeyenceDataProcessing
 
             return readerData;
         }
-        #endregion
 
+
+        private void OnReadSuccess()
+        {
+            if (ReadSuccessed != null)
+            {
+                ReadSuccessed.Invoke();
+            }
+        }
+
+        private void OnReadError()
+        {
+            if (ReadFailed != null)
+            {
+                ReadFailed.Invoke();
+            }
+        }
+        #endregion
     }
+    #endregion
 }

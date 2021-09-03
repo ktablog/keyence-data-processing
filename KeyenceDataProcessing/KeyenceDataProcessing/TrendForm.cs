@@ -26,26 +26,23 @@ namespace KeyenceDataProcessing
         private double _yValueStart = 0;
         private double _yValuePitch = 0;
         private DateTime _calculateTime;
-        private IKeyenceReader _keyenceReader;
         private Queue<KeyenceData> _keyenceData = new Queue<KeyenceData>(1024);
         private SimaticCommunication _simaticCommunication = new SimaticCommunication();
         private KeyenceCommunication _keyenceCommunication = new KeyenceCommunication();
+        private KeyenceReaderData _keyenceReaderData;
         private SignalProcessor _signalProcessor = new SignalProcessor();
         #endregion
+
 
         #region Delegate
         delegate bool ChooseValue(double v1, double v2);
         #endregion
 
+
         #region Property
         public int NofDots
         {
             get { return _signalProcessor.NofDots; }
-        }
-        public IKeyenceReader KeyenceController
-        {
-            get { return _keyenceReader; }
-            set { _keyenceReader = value; }
         }
         public double YValueInMm
         {
@@ -63,6 +60,7 @@ namespace KeyenceDataProcessing
         }
 
         #endregion
+
 
         #region Method
 
@@ -311,24 +309,9 @@ namespace KeyenceDataProcessing
             }
         }
 
-
-        private void startKeyence()
-        {
-            _keyenceReader.KeyenceStart();
-            keyenceTimer.Start();
-        }
-
-
-        private void stopKeyence()
-        {
-            keyenceTimer.Stop();
-            //_keyenceReader.KeyenceStop();
-        }
-
-
         private void keyenceTimer_Tick(object sender, EventArgs e)
         {
-            KeyenceReaderData readerData = _keyenceReader.KeyenceReadProfile();
+            KeyenceReaderData readerData = KeyenceReadProfile();
             double[] data = null;
             if (readerData != null)
             {
@@ -373,38 +356,11 @@ namespace KeyenceDataProcessing
             }
         }
 
-        #endregion
-
         private void TrendForm_Load(object sender, EventArgs e)
         {
             Common.Load();
             chartUpdateTimer_Tick(null, null);
         }
-
-        #region Classes
-        class KeyenceData
-        {
-            private DateTime _time;
-            private double _y;
-            private double _z;
-
-            public DateTime Time
-            {
-                get { return _time; }
-                set { _time = value; }
-            }
-            public double Y
-            {
-                get { return _y; }
-                set { _y = value; }
-            }
-            public double Z
-            {
-                get { return _z; }
-                set { _z = value; }
-            }
-        }
-        #endregion
 
         private void optionsButton_Click(object sender, EventArgs e)
         {
@@ -531,26 +487,28 @@ namespace KeyenceDataProcessing
 
         private void RestartKeyenceCommunication()
         {
-            startKeyence(); return;
-             
-           /*
             Nullable<KeyenceCommunicationOptions> communicationOptions = ConvertToKeyenceCommunicationOptions();
             if (communicationOptions != null)
-             {
-                 _keyenceCommunication.CommunicationOptions = communicationOptions.Value;
-                 _keyenceCommunication.Start();
-             }
-             else
-             {
-                 StopKeyenceCommunication();
-             }*/
+            {
+                _keyenceCommunication.CommunicationOptions = communicationOptions.Value;
+                _keyenceCommunication.ReadSuccessed += OnKeyenceReadSuccessed;
+                _keyenceCommunication.ReadFailed += OnKeyenceReadFailed;
+                _keyenceCommunication.Start();
+                keyenceTimer.Start();
+            }
+            else
+            {
+                StopKeyenceCommunication();
+            }
         }
 
 
         private void StopKeyenceCommunication()
         {
-            stopKeyence(); return;
-            //_keyenceCommunication.Stop();
+            keyenceTimer.Stop();
+            _keyenceCommunication.ReadSuccessed -= OnKeyenceReadSuccessed;
+            _keyenceCommunication.ReadFailed -= OnKeyenceReadFailed;
+            _keyenceCommunication.Stop();
         }
 
 
@@ -558,6 +516,54 @@ namespace KeyenceDataProcessing
         {
             return keyenceCommunicationCheckBox.Checked;
         }
-   
+
+
+        private void OnKeyenceReadSuccessed()
+        {
+            _keyenceReaderData = _keyenceCommunication.ReaderData;
+            Console.Out.WriteLine(_keyenceReaderData == null ? "NULL" : "NOT NULL");
+            Console.Out.WriteLine("KEYENCE SUCCESS");
+        }
+
+        private void OnKeyenceReadFailed()
+        {
+            _keyenceReaderData = null;
+            Console.Out.WriteLine("KEYENCE FAIL");
+        }
+
+
+        private KeyenceReaderData KeyenceReadProfile()
+        {
+            KeyenceReaderData readerData = _keyenceReaderData;
+            return readerData;
+        }
+
+        #endregion
+
+
+        #region KeyenceData
+        class KeyenceData
+        {
+            private DateTime _time;
+            private double _y;
+            private double _z;
+
+            public DateTime Time
+            {
+                get { return _time; }
+                set { _time = value; }
+            }
+            public double Y
+            {
+                get { return _y; }
+                set { _y = value; }
+            }
+            public double Z
+            {
+                get { return _z; }
+                set { _z = value; }
+            }
+        }
+         #endregion
     }
 }
