@@ -84,7 +84,7 @@ namespace KeyenceDataProcessing
                     data = _communicationData;
                     data.Counter = _sendCounter;
                     Write(ref data);
-                    Read();
+                    //Read();
                     _sendCounter++;
                 }
                 catch
@@ -95,7 +95,7 @@ namespace KeyenceDataProcessing
                     Monitor.Exit(_lockObject);
                 }
 
-                Thread.Sleep(1000);
+                Thread.Sleep(1/*000*/);
             }
         }
 

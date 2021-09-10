@@ -139,7 +139,7 @@ namespace KeyenceDataProcessing
                     OnReadError();
                 }
 
-                Thread.Sleep(1000);
+                Thread.Sleep(1/*000*/);
             }
          }
 
@@ -237,7 +237,7 @@ namespace KeyenceDataProcessing
 
             KeyenceReaderData readerData = new KeyenceReaderData();
             readerData.ProfileData = doubleProfileDataArr;
-            readerData.YPitch = profileInfo.lXStart;
+            readerData.YStart = profileInfo.lXStart;
             readerData.YPitch = profileInfo.lXPitch;
 
             return readerData;
