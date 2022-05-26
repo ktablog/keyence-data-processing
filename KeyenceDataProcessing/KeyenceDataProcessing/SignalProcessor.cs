@@ -6,6 +6,7 @@ using System.Diagnostics;
 namespace KeyenceDataProcessing
 {
     #region SignalProcessor
+
     public class SignalProcessor
     {
         #region Field
@@ -13,14 +14,21 @@ namespace KeyenceDataProcessing
         private const int _nOfZHistoColumns = 7;
         private const int _searchSignalCount = 3;
         private const double _signalDiffMax = 0.5;
+        private const double plusSlope = 0.1;
+        private const double minusSlope = -plusSlope;
+        private const int maxSeamWidthInDots = 120;
+        private const int maxSlopeGap = 10;
         private int[] _validSignalRange = null;
         private double[] _validSignal = null;
+        private double[] _slopeSignal = null;
         private double[] _searchSignal = null;
         private List<double[]> _searchSignalsList = new List<double[]>();
         private int _searchSignalOffset = 0;
         private bool _searchError = true;
         private double _yValue;
         private double _zValue;
+        private double[] _removedCurvatureSignal;
+        private double[][] _foundSignal;
         #endregion
 
         #region Property
@@ -285,8 +293,12 @@ namespace KeyenceDataProcessing
 
         public SignalProcessorDataOut Calc(SignalProcessorDataIn dataIn)
         {
-            _validSignalRange = FindValidSignal(dataIn._entrySignal, -20);
-            _validSignal = ExtractValidSignal(dataIn._entrySignal, _validSignalRange);
+            SignalProcessorDataOut dataOut = new SignalProcessorDataOut();
+
+            _validSignalRange = FindValidSignal(dataIn.entrySignal, -20);
+            dataOut.validSignalRange = _validSignalRange;
+            _validSignal = ExtractValidSignal(dataIn.entrySignal, _validSignalRange);
+
             if (_validSignal == null)
             {
                 _searchError = true;
@@ -295,20 +307,20 @@ namespace KeyenceDataProcessing
             {
                 CalcY(dataIn);
                 CalcZ();
+                dataOut.slopeSignal = _slopeSignal;
             }
-
-            SignalProcessorDataOut dataOut = new SignalProcessorDataOut();
  
-            dataOut._searchError = _searchError;
+            dataOut.searchError = _searchError;
             if (!_searchError)
             {
                 double[] copiedSearchSignal = new double[_searchSignal.Length];
                 Array.Copy(_searchSignal, copiedSearchSignal, _searchSignal.Length);
-                dataOut._searchSignal = copiedSearchSignal;
+                dataOut.searchSignal = copiedSearchSignal;
             }
-            dataOut._searchSignalOffset = _searchSignalOffset;
-            dataOut._yValue = _yValue;
-            dataOut._zValue = _zValue;
+            dataOut.searchSignalOffset = _searchSignalOffset;
+            dataOut.yValue = _yValue;
+            dataOut.zValue = _zValue;
+            dataOut.foundSignal = _searchError ? null : _foundSignal;
             return dataOut;
         }
 
@@ -319,15 +331,16 @@ namespace KeyenceDataProcessing
             bool err = false;
 
             double[] firstSearchSignal = _searchSignalsList[0];
-            double[] removedCurvatureSignal = RemoveSignalCurvature(_validSignal);
-            int convolutionLen = removedCurvatureSignal.Length - firstSearchSignal.Length + 1;
+            _removedCurvatureSignal = RemoveSignalCurvature(_validSignal);
+            _slopeSignal = CalcSlopes(_validSignal);
+            int convolutionLen = _removedCurvatureSignal.Length - firstSearchSignal.Length + 1;
             double[] convolution = new double[convolutionLen];
 
             double maxConv = 0.0;
             int maxConvIndex = -1;
             for (int i = 0; i < convolutionLen; i++)
             {
-                double conv = CalcConv(i, removedCurvatureSignal, firstSearchSignal);
+                double conv = CalcConv(i, _removedCurvatureSignal, firstSearchSignal);
                 if (maxConvIndex < 0)
                 {
                     maxConv = conv;
@@ -345,7 +358,7 @@ namespace KeyenceDataProcessing
 
             offset = maxConvIndex + _validSignalRange[0] + 1;
 
-            double[] entrySignalSlice = GetArraySlice(dataIn._entrySignal, offset, _searchSignal.Length);
+            double[] entrySignalSlice = GetArraySlice(dataIn.entrySignal, offset, _searchSignal.Length);
             double[] normalizedEntrySignalSlice = NormalizeSignal(entrySignalSlice);
             List<double[]> normalizedSearchSignalsList = new List<double[]>();
             for (int i = 0; i < SearchSignalsCount; i++)
@@ -367,16 +380,105 @@ namespace KeyenceDataProcessing
                     indexOfMin = i;
                 }
             }
-            //indexOfMin = 2;
             double diff = diffList[indexOfMin];
             _searchSignal = _searchSignalsList[indexOfMin];
-
-            Console.Out.WriteLine(indexOfMin + " " + diff);
 
             if (diff > _signalDiffMax)
                 err = true;
 
             _yValue = offset + _searchSignalsList[0].Length / 2;
+
+            if (!err)
+            {
+                try
+                {
+                    int center = (int)_yValue - _validSignalRange[0];
+                    double[] minMax = FindMinMaxAtCenterInRange(_removedCurvatureSignal, center, maxSeamWidthInDots/2);
+                    //Console.WriteLine(minMax[0] + ";" + minMax[1]);
+                    double cutoffLevel = CalcCutoffLevel(minMax[0], minMax[1]);
+                    //Console.WriteLine("CutoffLevel=" + cutoffLevel);
+                    int minusCenter = FindMinusIndexOfCutoff(_removedCurvatureSignal, center, cutoffLevel, maxSeamWidthInDots / 2);
+                    //Console.WriteLine("MinusCenter=" + minusCenter);
+                    int plusCenter = FindPlusIndexOfCutoff(_removedCurvatureSignal, center, cutoffLevel, maxSeamWidthInDots / 2);
+                    //Console.WriteLine("PlusCenter=" + plusCenter);
+                    int[] minusSlopesIndexes = BuildSlopeMinusIndexesV2(minusCenter, _slopeSignal);
+                    int[] plusSlopesIndexes = BuildSlopePlusIndexesV2(plusCenter, _slopeSignal);
+                    int[] minusSlopesY = BuildSlopesIndexes(minusSlopesIndexes);
+                    int[] plusSlopesY = BuildSlopesIndexes(plusSlopesIndexes);
+                    double minusSlopesMaxZ = _validSignal[minusSlopesY[0]];
+                    double plusSlopesMaxZ = _validSignal[plusSlopesY[plusSlopesY.Length - 1]];
+                    double deltaSlopesMaxZ = plusSlopesMaxZ - minusSlopesMaxZ;
+                    Line minusLine = CalcSlopeLine(minusSlopesY, _validSignal);
+                    Line plusLine = CalcSlopeLine(plusSlopesY, _validSignal);
+                    double[] linesCross = FindLinesCross(minusLine, plusLine);
+                    Line correctedPlusLine = plusLine;
+                    correctedPlusLine.b -= deltaSlopesMaxZ;
+                    double[] correctedLinesCross = FindLinesCross(minusLine, correctedPlusLine);
+                    _yValue = correctedLinesCross[0];
+
+                    double[][] foundSignal = new double[5][];
+                    foundSignal[1] = new double[] { minusSlopesY[0], minusLine.a * minusSlopesY[0] + minusLine.b };
+                    foundSignal[0] = new double[] { foundSignal[1][0] - 1, foundSignal[1][1] };
+                    foundSignal[2] = new double[] { linesCross[0], linesCross[1] };
+                    foundSignal[3] = new double[] { plusSlopesY[plusSlopesY.Length - 1], plusLine.a * plusSlopesY[plusSlopesY.Length - 1] + plusLine.b };
+                    foundSignal[4] = new double[] { foundSignal[3][0] + 1, foundSignal[3][1] };
+                    for (int i = 0; i < 5; i++)
+                    {
+                        foundSignal[i][0] += _validSignalRange[0];
+                    }
+                    _foundSignal = foundSignal; _yValue += _validSignalRange[0];
+
+                }
+                catch (Exception e)
+                {
+                    err = true;
+                    Console.WriteLine(e.ToString());
+                }
+            }
+
+            /*if (!err)
+            {
+                try
+                {
+                    int center = (int)_yValue - _validSignalRange[0];
+                    double[][] splitedSlopes = SplitArray(_slopeSignal, center);
+                    double[] minusSlopes = splitedSlopes[0];
+                    double[] plusSlopes = splitedSlopes[1];
+                    int[] minusSlopesIndexes = BuildSlopeMinusIndexes(0, minusSlopes);
+                    int[] plusSlopesIndexes = BuildSlopePlusIndexes(center, plusSlopes);
+                    int[] minusSlopesY = BuildSlopesIndexes(minusSlopesIndexes);
+                    int[] plusSlopesY = BuildSlopesIndexes(plusSlopesIndexes);
+                    double minusSlopesMaxZ = _validSignal[minusSlopesY[0]];
+                    double plusSlopesMaxZ = _validSignal[plusSlopesY[plusSlopesY.Length - 1]];
+                    double deltaSlopesMaxZ = plusSlopesMaxZ - minusSlopesMaxZ;
+                    Line minusLine = CalcSlopeLine(minusSlopesY, _validSignal);
+                    Line plusLine = CalcSlopeLine(plusSlopesY, _validSignal);
+                    double[] linesCross = FindLinesCross(minusLine, plusLine);
+                    Line correctedPlusLine = plusLine;
+                    correctedPlusLine.b -= deltaSlopesMaxZ;
+                    double[] correctedLinesCross = FindLinesCross(minusLine, correctedPlusLine);
+                    _yValue = correctedLinesCross[0];
+
+                    double[][] foundSignal = new double[5][];
+                    foundSignal[1] = new double[] { minusSlopesY[0], minusLine.a * minusSlopesY[0] + minusLine.b };
+                    foundSignal[0] = new double[] { foundSignal[1][0] - 1, foundSignal[1][1] };
+                    foundSignal[2] = new double[] { linesCross[0], linesCross[1] };
+                    foundSignal[3] = new double[] { plusSlopesY[plusSlopesY.Length - 1], plusLine.a * plusSlopesY[plusSlopesY.Length - 1] + plusLine.b };
+                    foundSignal[4] = new double[] { foundSignal[3][0] + 1, foundSignal[3][1] };
+                    for (int i = 0; i < 5; i++)
+                    {
+                        foundSignal[i][0] += _validSignalRange[0];
+                    }
+                    _foundSignal = foundSignal;                    _yValue += _validSignalRange[0];
+
+                }
+                catch(Exception e)
+                {
+                    err = true;
+                    Console.WriteLine(e.ToString());
+                }
+            }*/
+
             _searchError = err;
             _searchSignalOffset = offset;
         }
@@ -473,11 +575,11 @@ namespace KeyenceDataProcessing
         private double CalcDeterminant3(double[,] a)
         {
             return a[0, 0] * a[1, 1] * a[2, 2] +
-                    a[0, 1] * a[1, 2] * a[2, 0] +
-                    a[0, 2] * a[1, 0] * a[2, 1] -
-                    a[0, 0] * a[1, 2] * a[2, 1] -
-                    a[0, 1] * a[1, 0] * a[2, 2] -
-                    a[0, 2] * a[1, 1] * a[2, 0];
+                   a[0, 1] * a[1, 2] * a[2, 0] +
+                   a[0, 2] * a[1, 0] * a[2, 1] -
+                   a[0, 0] * a[1, 2] * a[2, 1] -
+                   a[0, 1] * a[1, 0] * a[2, 2] -
+                   a[0, 2] * a[1, 1] * a[2, 0];
         }
 
 
@@ -613,7 +715,6 @@ namespace KeyenceDataProcessing
 
             for (int i = 0; i < inArr.Length; i++)
             {
-                //outArr[i] = inArr[i];
                 outArr[i] = inArr[i] - CalcPolinom3(factors, i);
             }
 
@@ -666,14 +767,312 @@ namespace KeyenceDataProcessing
         private double[] GetArraySlice(double[] arr, int offset, int size)
         {
             double[] slice = new double[size];
-
-            for (int i = 0; i < size; i++)
-            {
-                slice[i] = arr[offset + i];
-            }
-
+            Array.Copy(arr, offset, slice, 0, size);
             return slice;
         }
+
+        private double[][] SplitArray(double[] arr, int n)
+        {
+            double[] arr1 = new double[n];
+            double[] arr2 = new double[arr.Length - n];
+
+            Array.Copy(arr, arr1, n);
+            Array.Copy(arr, n, arr2, 0, arr2.Length);
+
+            return new double[][] {arr1, arr2};
+        }
+
+
+        private int[] BuildSlopeMinusIndexes(int offset, double[] arr)
+        {
+            List<int> list = new List<int>();
+
+            int maxN = maxSeamWidthInDots / 2;
+            int fromIndex = arr.Length - maxN;
+            if (fromIndex < 0)
+            {
+                fromIndex = 0;
+            }
+            double value;
+            for (int i = fromIndex; i < arr.Length; i++)
+            {
+                value = arr[i];
+                if(value < minusSlope)
+                {
+                    list.Add(offset + i);
+                }
+            }
+
+            return list.ToArray();
+        }
+
+
+        private int[] BuildSlopePlusIndexes(int offset, double[] arr)
+        {
+            List<int> list = new List<int>();
+
+            int maxN = maxSeamWidthInDots / 2;
+            int n = arr.Length < maxN ? arr.Length : maxN;
+            double value;
+            for (int i = 0; i < n; i++)
+            {
+                value = arr[i];
+                if (value > plusSlope)
+                {
+                    list.Add(offset + i);
+                }
+            }
+
+            return list.ToArray();
+        }
+
+
+        private double[] CalcSlopes(double[] arr)
+        {
+            if (arr == null || arr.Length < 2)
+            {
+                return null;
+
+            }
+
+            int size = arr.Length;
+            double[] slopes = new double[size];
+
+            for (int i = 1; i < size; i++)
+            {
+                slopes[i] = arr[i] - arr[i - 1];
+            }
+
+            return slopes;
+        }
+
+
+        private int[] BuildSlopesIndexes(int[] src)
+        {
+            List<int> resultList = new List<int>();
+
+            int lastIndex = -1;
+            for(int i = 0; i < src.Length; i++)
+            {
+                int index = src[i] - 1;
+                if (index != lastIndex)
+                {
+                    resultList.Add(index);
+                }
+                lastIndex = index + 1;
+                resultList.Add(lastIndex);
+            }
+
+            return resultList.ToArray();
+        }      
+  
+
+        private Line CalcSlopeLine(int[] xArr, double[] yArr) 
+        {
+            Line resultLine = new Line();
+
+            int n = xArr.Length;
+            double sumX = 0;
+            double sumY = 0;
+            double sumXY = 0;
+            double sumX2 = 0;
+
+            for (int i = 0; i < n; i++)
+            {
+                double x = xArr[i];
+                double y = yArr[(int)x];
+                sumX += x;
+                sumY += y;
+                sumXY += x * y;
+                sumX2 += x * x;
+            }
+
+            double a = (n * sumXY - sumX * sumY) / 
+                       (n * sumX2 - sumX * sumX);
+            double b = (sumY - a * sumX) / n;
+
+            resultLine.a = a;
+            resultLine.b = b;
+
+            return resultLine;
+        }
+
+
+        private double[] FindLinesCross(Line line1, Line line2)
+        {
+            double x = (line2.b - line1.b) / (line1.a - line2.a);
+            double y = line1.a * x + line1.b;
+            return new double[] { x, y };
+        }
+
+
+        private double[] FindMinMaxAtCenterInRange(double[] arr, int centerIndex, int size)
+        {
+            double min = arr[centerIndex];
+            double max = arr[centerIndex];
+            for (int i = centerIndex - size; i < centerIndex + size; i++)
+            {
+                if (i < 0)
+                {
+                    continue;
+                }
+                if (i >= arr.Length)
+                {
+                    break;
+                }
+                double value = arr[i];
+                if (value > max)
+                {
+                    max = value;
+                }
+                if (value < min)
+                {
+                    min = value;
+                }
+            }
+            return new double[] { min, max };
+        }
+
+
+        private double CalcCutoffLevel(double min, double max)
+        {
+            const double cutoff = 0.75;
+            return min + (max - min) * cutoff;
+        }
+
+
+        private int FindMinusIndexOfCutoff(double[] arr, int center, double cutoffLevel, int size)
+        {
+            int foundIndex = center;
+            for (int i = center - 1; i >= 0 && i > center - size; i--)
+            {
+                if (arr[i] >= cutoffLevel)
+                {
+                    foundIndex = i;
+                    break;
+                }
+
+            }
+            return foundIndex;
+        }
+
+
+        private int FindPlusIndexOfCutoff(double[] arr, int center, double cutoffLevel, int size)
+        {
+            int foundIndex = center;
+            for (int i = center; i < arr.Length && i < center + size; i++)
+            {
+                if (arr[i] >= cutoffLevel)
+                {
+                    foundIndex = i;
+                    break;
+                }
+            }
+            return foundIndex;
+        }
+
+
+        private int[] BuildSlopeMinusIndexesV2(int center, double[] arr)
+        {
+            const double breakValue = 0.0;
+            int gapCount = 0;
+
+            List<int> list = new List<int>();
+
+            const int maxN = maxSeamWidthInDots / 2;
+            for (int i = center; i < arr.Length && i < center + maxN; i++)
+            {
+                double value = arr[i];
+                if (value < minusSlope)
+                {
+                    list.Add(i);
+                    gapCount = 0;
+                }
+                else if (value > breakValue)
+                {
+                    break;
+                }
+                else if (++gapCount == maxSlopeGap)
+                {
+                    break;
+                }
+            }
+
+            gapCount = 0;
+            for (int i = center - 1; i >= 0; i--)
+            {
+                double value = arr[i];
+                if (value < minusSlope)
+                {
+                    list.Add(i);
+                    gapCount = 0;
+                }
+                else if (value > breakValue)
+                {
+                    break;
+                }
+                else if (++gapCount == maxSlopeGap)
+                {
+                    break;
+                }
+            }
+
+            list.Sort();
+          
+            return list.ToArray();
+        }
+
+
+        private int[] BuildSlopePlusIndexesV2(int center, double[] arr)
+        {
+            const double breakValue = 0.0;
+            int gapCount = 0;
+
+            List<int> list = new List<int>();
+
+            const int maxN = maxSeamWidthInDots / 2;
+            for (int i = center; i < arr.Length && i < center + maxN; i++)
+            {
+                double value = arr[i];
+                if (value > plusSlope)
+                {
+                    list.Add(i);
+                    gapCount = 0;
+                }
+                else if (value < breakValue)
+                {
+                    break;
+                }
+                else if (++gapCount == maxSlopeGap)
+                {
+                    break;
+                }
+            }
+
+            gapCount = 0;
+            for (int i = center - 1; i >= 0; i--)
+            {
+                double value = arr[i];
+                if (value > plusSlope)
+                {
+                    list.Add(i);
+                    gapCount = 0;
+                }
+                else if (value < breakValue)
+                {
+                    break;
+                }
+                else if (++gapCount == maxSlopeGap)
+                {
+                    break;
+                }
+            }
+
+            list.Sort();
+
+            return list.ToArray();
+        }
+
 
         #endregion
     }
@@ -683,7 +1082,7 @@ namespace KeyenceDataProcessing
     #region SignalProcessorDataIn
     public class SignalProcessorDataIn
     {
-        public double[] _entrySignal = null;
+        public double[] entrySignal = null;
     }
     #endregion
 
@@ -691,11 +1090,22 @@ namespace KeyenceDataProcessing
     #region SignalProcessorDataOut
     public class SignalProcessorDataOut
     {
-        public double[] _searchSignal = null;
-        public bool _searchError = true;
-        public double _yValue = 0.0;
-        public double _zValue = 0.0;
-        public int _searchSignalOffset = 0;
+        public double[] searchSignal;
+        public double[] slopeSignal;
+        public int[] validSignalRange;
+        public bool searchError = true;
+        public double yValue;
+        public double zValue;
+        public int searchSignalOffset;
+        public double[][] foundSignal;
+    }
+    #endregion
+
+    #region Line
+    struct Line
+    {
+        public double a;
+        public double b;
     }
     #endregion
 }

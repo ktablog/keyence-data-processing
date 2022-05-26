@@ -17,6 +17,9 @@ namespace KeyenceDataProcessing
         #region Field
         private double[] _entrySignal = null;
         private double[] _searchSignal = null;
+        private double[] _slopeSignal = null;
+        private int[] _slopeSignalRange = null;
+        private double[][] _foundSignal = null;
         private int _searchSignalOffset = 0;
         private bool _searchError = true;
         private bool _entryPainting = false;
@@ -100,6 +103,8 @@ namespace KeyenceDataProcessing
             _calculateTime = DateTime.Now;
             Calc();
             PlotSearchSeries();
+            PlotSlopeSeries();
+            PlotFoundSeries();
             UpdateView();
             if (!_searchError)
             {
@@ -140,7 +145,39 @@ namespace KeyenceDataProcessing
 
         private void PlotSearchSeries()
         {
-            Plot("SearchSeries", _searchError ? null : _searchSignal, _searchSignalOffset);
+            //Plot("SearchSeries", _searchError ? null : _searchSignal, _searchSignalOffset);
+        }
+
+        private void PlotSlopeSeries()
+        {
+            /*double[] scaledSignal = null;
+            if (_slopeSignal != null)
+            {
+                int n = _slopeSignal.Length;
+                scaledSignal = new double[n];
+                for (int i = 0; i < n; i++)
+                {
+                    scaledSignal[i] = _slopeSignal[i] * 10.0;
+                }
+            }
+            Plot("SlopeSeries", scaledSignal, scaledSignal == null ? 0 : _slopeSignalRange[0]);
+             */
+        }
+
+        private void PlotFoundSeries()
+        {
+            Series series = convolutionChart.Series.FindByName("FoundSeries");
+            if (series == null)
+                return;
+            series.Points.Clear();
+            double[][] signal = _foundSignal;
+            if (signal == null)
+                return;
+            int n = signal.Length;
+            for (int i = 0; i < n; i++)
+            {
+                series.Points.AddXY(signal[i][0], signal[i][1]);
+            }
         }
 
 
@@ -245,13 +282,16 @@ namespace KeyenceDataProcessing
         private void Calc()
         {
             SignalProcessorDataIn dataIn = new SignalProcessorDataIn();
-            dataIn._entrySignal = _entrySignal;
+            dataIn.entrySignal = _entrySignal;
             SignalProcessorDataOut dataOut = _signalProcessor.Calc(dataIn);
-            _searchError = dataOut._searchError;
-            _searchSignal = dataOut._searchSignal;
-            _searchSignalOffset = dataOut._searchSignalOffset;
-            _yValue = dataOut._yValue;
-            _zValue = dataOut._zValue;
+            _searchError = dataOut.searchError;
+            _searchSignal = dataOut.searchSignal;
+            _searchSignalOffset = dataOut.searchSignalOffset;
+            _yValue = dataOut.yValue;
+            _zValue = dataOut.zValue;
+            _slopeSignal = dataOut.slopeSignal;
+            _slopeSignalRange = dataOut.validSignalRange;
+            _foundSignal = dataOut.foundSignal;
             SimaticCommunicationData simaticCommunicationData = new SimaticCommunicationData();
             simaticCommunicationData.Quality = !_searchError;
             simaticCommunicationData.ResultY = YValueInMm;
